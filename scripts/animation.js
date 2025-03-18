@@ -50,119 +50,133 @@ class RollAnimationWindow extends Application {
             id: "roll-animation",
             title: "Rolling...",
             template: "modules/animated-roll-tables/templates/roll-animation.html",
-            width: 600,
-            height: 200
+            width: 800,  // Adjusted to match larger icon size
+            height: 400   // Increased to fit better
         });
     }
+    
 
     async getData() {
         return { results: this.results };
     }
 
     activateListeners(html) {
-        let strip = html.find(".roll-strip");
-        let indicator = html.find(".roll-indicator");
+        let displayArea = html.find(".roll-display");
     
-        strip.empty(); // Clear previous entries
+        displayArea.empty(); // Clear previous images
     
-        // Duplicate images multiple times for a smooth loop
-        for (let i = 0; i < 10; i++) {  // Repeat 10x for seamless animation
-            this.results.forEach((r) => {
-                strip.append(`<img src="${r.img}" alt="${r.text}" />`);
-            });
-        }
+        // Create a single image slot to display the rolling animation
+        displayArea.append(`<img class="rolling-image" src="" alt="Rolling Image" />`);
     
-        this.startRolling(strip, indicator);
+        this.startRolling(displayArea.find(".rolling-image"));
     }
     
+    
 
-    startRolling(strip, indicator) {
-        let position = 0;
-        let initialSpeed = 30;  // Start fast
-        let spinCount = 30;  // Spins before stopping
-        let speedMultiplier = 1.1;  // Smooth slow-down
+    startRolling(imageElement) {
+        let index = 0;
+        let initialSpeed = 50;  // Start fast
+        let spinCount = 50;  // More spins before stopping
+        let slowSpinStart = 20;  // Start slowing down later
+        let minSpeed = 500;  // Slowest allowed speed
+        let speedDecreaseFactor = 0.95; // Smaller steps for a longer slow phase
+        let textElement = $(".rolling-text"); // Ensure correct selection of text
     
         AudioHelper.play({ src: "modules/animated-roll-tables/assets/sounds/start.mp3" });
     
-        let loopAnimation = () => {
+        let cycleImages = () => {
             if (spinCount > 0) {
                 spinCount--;
     
-                position -= 120;  // Move left by one item width
-                strip.css({
-                    transform: `translateX(${position}px)`,
-                    transition: `transform ${initialSpeed}ms linear`
+                // Update image and name
+                index = (index + 1) % this.results.length;
+                let newImage = this.results[index].img;
+                let newText = this.results[index].text;
+    
+                imageElement.fadeOut(50, function () {
+                    $(this).attr("src", newImage).fadeIn(50);
                 });
     
-                initialSpeed *= speedMultiplier;  // Gradually slow down
-                if (initialSpeed > 900) initialSpeed = 900;  // Cap slow-down
+                textElement.fadeOut(50, function () {
+                    $(this).text(newText).fadeIn(50);
+                });
     
-                setTimeout(loopAnimation, initialSpeed);
+                // Extend the slow roll phase
+                if (spinCount < slowSpinStart) {
+                    initialSpeed = Math.min(initialSpeed / speedDecreaseFactor, minSpeed);
+                }
+    
+                setTimeout(cycleImages, initialSpeed);
             } else {
-                this.stopRolling(strip, indicator);
+                this.stopRolling(imageElement, textElement);
             }
         };
     
-        loopAnimation();
+        cycleImages();
     }
+    
+    
+    
+    
+    
+    
+    
 
-    stopRolling(strip, indicator) {
-        let containerWidth = strip.parent().width();
-        let itemWidth = 120;
+    stopRolling(imageElement, textElement) {
+        let winningIndex = this.winningIndex;
+        let winningItem = this.results[winningIndex];
     
-        // Calculate exact final stop position
-        let finalOffset = -(this.winningIndex * itemWidth) + (containerWidth / 2 - itemWidth / 2);
-    
-        console.log(`Stopping at index ${this.winningIndex}, offset: ${finalOffset}`);
+        console.log(`Stopping on winning index: ${winningIndex}, Winner: ${winningItem.text}`);
     
         setTimeout(() => {
-            strip.css({
-                //transform: `translateX(${finalOffset}px)`,
-                transition: "transform 2s ease-out"
+            // Apply a final smooth ease-out before stopping completely
+            imageElement.css({
+                transition: "transform 3s cubic-bezier(0.3, 1, 0.5, 1)"
             });
     
+            // Set final image and name to the winner
+            imageElement.attr("src", winningItem.img);
+            textElement.text(winningItem.text);
+    
+            // Reveal the winner after delay
             setTimeout(() => {
-                strip.css({
-                    transform: `translateX(${finalOffset}px)`,  // Keep locked in place
-                    transition: "none"  // Prevent further movement
-                });
-    
-                indicator.addClass("flash");  // Flash indicator on winner
-    
-                // Reveal the winner after delay
-                setTimeout(() => {
-                    this.showWinningResult(strip, indicator);
-                }, this.finalDelay);
-    
-            }, 2200);
+                this.showWinningResult(imageElement, textElement);
+            }, this.finalDelay);
     
         }, 1200);
     }
     
-    showWinningResult(strip, indicator) {
-        strip.empty(); // Clear out the spinning images
-        indicator.removeClass("flash");
     
-        strip.append(`
-            <div class="winner-result">
-                <h2>🎉 You won: ${this.winningResult.text} 🎉</h2>
-                <img src="${this.winningResult.img}" alt="Winning Result" />
-            </div>
-        `);
     
-        strip.css({
-            transform: "translateX(0px)",
-            transition: "none"
+    
+    
+    
+    
+    
+    showWinningResult(imageElement) {
+        let winningItem = this.winningResult;
+    
+        console.log(`Final Winner: ${winningItem.text}`);
+    
+        // Fade out rolling image and replace with winner display
+        imageElement.fadeOut(500, () => {
+            imageElement.replaceWith(`
+                <div class="winner-result">
+                    <h2>🎉 You won: ${winningItem.text} 🎉</h2>
+                    <img src="${winningItem.img}" alt="Winning Result" />
+                </div>
+            `);
         });
     
         // Play the winning sound
         AudioHelper.play({ src: "modules/animated-roll-tables/assets/sounds/win.mp3" });
     
-        // Auto-close animation window after 5 seconds (optional)
+        // Auto-close animation window after 7 seconds (optional)
         setTimeout(() => {
             this.close();
         }, 7000);
     }
+    
     
 }
 
