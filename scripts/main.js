@@ -11,6 +11,7 @@ console.log("✅ main.js is loading...");
 // EXAMPLES
 
 // Adding button to sidebar example
+/*
 Hooks.on("renderSidebarTab", (app, html) => {
     if (app.options.id === "chat") {
         let button = $(`<button class="my-button">Click Me</button>`);
@@ -18,6 +19,7 @@ Hooks.on("renderSidebarTab", (app, html) => {
         html.append(button);
     }
 });
+*/
 
 // Modify actor data example
 Hooks.on("createActor", (actor) => {

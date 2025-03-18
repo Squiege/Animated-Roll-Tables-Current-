@@ -25,11 +25,9 @@ export function startAnimatedRoll(rollTable) {
     new RollAnimationWindow(results, winningResult, winningIndex).render(true);
 }
 
-
 // Force register it globally
 window.startAnimatedRoll = startAnimatedRoll;
 console.log("startAnimatedRoll is now available globally.");
-
 
 // Animation Logic
 class RollAnimationWindow extends Application {
@@ -70,17 +68,15 @@ class RollAnimationWindow extends Application {
     
         this.startRolling(displayArea.find(".rolling-image"));
     }
-    
-    
 
     startRolling(imageElement) {
         let index = 0;
         let initialSpeed = 50;  // Start fast
-        let spinCount = 50;  // More spins before stopping
-        let slowSpinStart = 20;  // Start slowing down later
-        let minSpeed = 500;  // Slowest allowed speed
-        let speedDecreaseFactor = 0.95; // Smaller steps for a longer slow phase
-        let textElement = $(".rolling-text"); // Ensure correct selection of text
+        let spinCount = 50;  // Total spins before stopping
+        let slowSpinStart = 20;  // When to start slowing down
+        let minSpeed = 700;  // Slowest speed
+        let slowDownSteps = 15;  // More steps for smoother deceleration
+        let textElement = $(".rolling-text");
     
         AudioHelper.play({ src: "modules/animated-roll-tables/assets/sounds/start.mp3" });
     
@@ -101,9 +97,12 @@ class RollAnimationWindow extends Application {
                     $(this).text(newText).fadeIn(50);
                 });
     
-                // Extend the slow roll phase
+                // Apply easing curve for smooth slow-down
                 if (spinCount < slowSpinStart) {
-                    initialSpeed = Math.min(initialSpeed / speedDecreaseFactor, minSpeed);
+                    let progress = 1 - (spinCount / slowSpinStart);  // Progress through slow-down
+                    let easingFactor = Math.pow(progress, 2.5);  // Easing curve (cubic for smoother stop)
+                    let newSpeed = initialSpeed + (minSpeed - initialSpeed) * easingFactor;
+                    initialSpeed = Math.min(newSpeed, minSpeed);
                 }
     
                 setTimeout(cycleImages, initialSpeed);
@@ -114,12 +113,6 @@ class RollAnimationWindow extends Application {
     
         cycleImages();
     }
-    
-    
-    
-    
-    
-    
     
 
     stopRolling(imageElement, textElement) {
@@ -145,22 +138,15 @@ class RollAnimationWindow extends Application {
     
         }, 1200);
     }
-    
-    
-    
-    
-    
-    
-    
-    
-    showWinningResult(imageElement) {
+
+    showWinningResult(imageElement, textElement) {
         let winningItem = this.winningResult;
     
         console.log(`Final Winner: ${winningItem.text}`);
     
         // Fade out rolling image and replace with winner display
-        imageElement.fadeOut(500, () => {
-            imageElement.replaceWith(`
+        imageElement.fadeOut(500, function () {
+            $(this).replaceWith(`
                 <div class="winner-result">
                     <h2>🎉 You won: ${winningItem.text} 🎉</h2>
                     <img src="${winningItem.img}" alt="Winning Result" />
@@ -171,13 +157,31 @@ class RollAnimationWindow extends Application {
         // Play the winning sound
         AudioHelper.play({ src: "modules/animated-roll-tables/assets/sounds/win.mp3" });
     
+        // Send the result to chat
+        let chatMessage = `
+            <div class="chat-card">
+                <div class="chat-card-header">
+                    <h2>🎉 Roll Result 🎉</h2>
+                </div>
+                <div class="chat-card-content">
+                    <img src="${winningItem.img}" width="50" height="50" style="border-radius: 5px;">
+                    <p><strong>${winningItem.text}</strong></p>
+                </div>
+            </div>
+        `;
+    
+        ChatMessage.create({
+            user: game.user.id,
+            speaker: ChatMessage.getSpeaker(),
+            content: chatMessage
+        });
+    
         // Auto-close animation window after 7 seconds (optional)
         setTimeout(() => {
             this.close();
         }, 7000);
     }
-    
-    
+
 }
 
 
