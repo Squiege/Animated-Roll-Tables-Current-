@@ -1,0 +1,21 @@
+{
+  "id": "animated-roll-tables",
+  "title": "animated-roll-tables",
+  "description": "A module that animates roll tables like a CS:GO case opening.",
+  "version": "1.0.0",
+  "esmodules": [
+    "scripts/main.js"
+  ],
+  "styles": [
+    "styles/style.css"
+  ],
+  "manifest": "module.json",
+  "authors": [
+    {
+      "name": "Devin Rider",
+      "email": "riderdevin@yahoo.com",
+      "discord": "Deblin",
+      "flags": {}
+    }
+  ]
+}
